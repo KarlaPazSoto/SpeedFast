@@ -1,105 +1,99 @@
 package app;
 
-import model.Pedido;
 import model.PedidoComida;
 import model.PedidoEncomienda;
 import model.PedidoExpress;
-import strategy.ControladorEnvios;
+import model.Repartidor;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        // Crear pedidos
-        PedidoComida pedidoComida = new PedidoComida(
+        // ==========================================
+        // CREACIÓN DE PEDIDOS
+        // ==========================================
+
+        PedidoComida pedidoComida1 = new PedidoComida(
                 1,
                 "Av. Providencia 123",
                 5
         );
 
-        PedidoEncomienda pedidoEncomienda = new PedidoEncomienda(
+        PedidoComida pedidoComida2 = new PedidoComida(
                 2,
-                "Av. Las Condes 456",
+                "Av. Vitacura 456",
+                3
+        );
+
+        PedidoEncomienda pedidoEncomienda1 = new PedidoEncomienda(
+                3,
+                "Av. Las Condes 789",
                 8
         );
 
-        PedidoExpress pedidoExpress = new PedidoExpress(
-                3,
-                "Av. Apoquindo 789",
+        PedidoEncomienda pedidoEncomienda2 = new PedidoEncomienda(
+                4,
+                "Av. Apoquindo 321",
+                4
+        );
+
+        PedidoExpress pedidoExpress1 = new PedidoExpress(
+                5,
+                "Av. Macul 654",
                 6
         );
 
-        // Crear controlador de envíos
-        ControladorEnvios controlador = new ControladorEnvios();
+        PedidoExpress pedidoExpress2 = new PedidoExpress(
+                6,
+                "Av. Grecia 987",
+                2
+        );
+
 
         // ==========================================
-        // RESUMEN Y TIEMPO DE ENTREGA
+        // CREACIÓN DE REPARTIDORES
         // ==========================================
 
-        System.out.println("===== PEDIDOS =====");
+        Repartidor juan = new Repartidor("Juan Pérez");
+        Repartidor camila = new Repartidor("Camila Soto");
+        Repartidor luis = new Repartidor("Luis Díaz");
 
-        pedidoComida.mostrarResumen();
-        System.out.println("Tiempo estimado: "
-                + pedidoComida.calcularTiempoEntrega() + " minutos");
+
+        // ==========================================
+        // ASIGNACIÓN DE PEDIDOS
+        // ==========================================
+
+        juan.agregarPedido(pedidoComida1);
+        juan.agregarPedido(pedidoExpress1);
+
+        camila.agregarPedido(pedidoEncomienda1);
+        camila.agregarPedido(pedidoComida2);
+
+        luis.agregarPedido(pedidoExpress2);
+        luis.agregarPedido(pedidoEncomienda2);
+
+
+        // ==========================================
+        // EJECUCIÓN CONCURRENTE
+        // ==========================================
+
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+
+        System.out.println("========================================");
+        System.out.println("INICIANDO SIMULACIÓN DE ENTREGAS");
+        System.out.println("========================================");
         System.out.println();
 
-        pedidoEncomienda.mostrarResumen();
-        System.out.println("Tiempo estimado: "
-                + pedidoEncomienda.calcularTiempoEntrega() + " minutos");
-        System.out.println();
+        executor.submit(juan);
+        executor.submit(camila);
+        executor.submit(luis);
 
-        pedidoExpress.mostrarResumen();
-        System.out.println("Tiempo estimado: "
-                + pedidoExpress.calcularTiempoEntrega() + " minutos");
-
-        // ==========================================
-        // ASIGNACIÓN DE REPARTIDORES
-        // ==========================================
+        executor.shutdown();
 
         System.out.println();
-        System.out.println("===== ASIGNACIÓN DE REPARTIDORES =====");
-
-        pedidoComida.asignarRepartidor();
-        pedidoComida.asignarRepartidor("Juan Pérez");
-
-        System.out.println();
-
-        pedidoEncomienda.asignarRepartidor();
-        pedidoEncomienda.asignarRepartidor("Camila Soto");
-
-        System.out.println();
-
-        pedidoExpress.asignarRepartidor();
-        pedidoExpress.asignarRepartidor("Luis Díaz");
-
-        // ==========================================
-        // DESPACHO
-        // ==========================================
-
-        System.out.println();
-        System.out.println("===== DESPACHO =====");
-
-        controlador.despachar();
-
-        // Agregamos los pedidos despachados al historial
-        controlador.agregarAlHistorial(pedidoComida);
-        controlador.agregarAlHistorial(pedidoEncomienda);
-
-        // ==========================================
-        // CANCELACIÓN
-        // ==========================================
-
-        System.out.println();
-        System.out.println("===== CANCELACIÓN =====");
-
-        controlador.cancelar();
-
-        // ==========================================
-        // HISTORIAL
-        // ==========================================
-
-        System.out.println();
-
-        controlador.verHistorial();
+        System.out.println("Todos los repartidores han sido enviados a trabajar.");
     }
 }
