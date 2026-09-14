@@ -1,99 +1,116 @@
 package app;
 
+import model.Pedido;
 import model.PedidoComida;
 import model.PedidoEncomienda;
 import model.PedidoExpress;
 import model.Repartidor;
+import model.ZonaDeCarga;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        // ==========================================
-        // CREACIÓN DE PEDIDOS
-        // ==========================================
+        // Crear la zona de carga compartida
+        ZonaDeCarga zonaDeCarga = new ZonaDeCarga();
 
-        PedidoComida pedidoComida1 = new PedidoComida(
+        // Crear pedidos
+        Pedido pedido1 = new PedidoComida(
                 1,
                 "Av. Providencia 123",
-                5
+                5.2
         );
 
-        PedidoComida pedidoComida2 = new PedidoComida(
+        Pedido pedido2 = new PedidoEncomienda(
                 2,
-                "Av. Vitacura 456",
-                3
+                "Av. Las Condes 456",
+                3.8
         );
 
-        PedidoEncomienda pedidoEncomienda1 = new PedidoEncomienda(
+        Pedido pedido3 = new PedidoExpress(
                 3,
-                "Av. Las Condes 789",
-                8
+                "Av. Macul 789",
+                7.5
         );
 
-        PedidoEncomienda pedidoEncomienda2 = new PedidoEncomienda(
+        Pedido pedido4 = new PedidoComida(
                 4,
-                "Av. Apoquindo 321",
-                4
+                "Av. Grecia 321",
+                2.4
         );
 
-        PedidoExpress pedidoExpress1 = new PedidoExpress(
+        Pedido pedido5 = new PedidoEncomienda(
                 5,
-                "Av. Macul 654",
-                6
+                "Av. Apoquindo 654",
+                6.1
         );
 
-        PedidoExpress pedidoExpress2 = new PedidoExpress(
-                6,
-                "Av. Grecia 987",
-                2
+        // Agregar pedidos a la zona de carga
+        zonaDeCarga.agregarPedido(pedido1);
+        zonaDeCarga.agregarPedido(pedido2);
+        zonaDeCarga.agregarPedido(pedido3);
+        zonaDeCarga.agregarPedido(pedido4);
+        zonaDeCarga.agregarPedido(pedido5);
+
+        // Crear repartidores
+        Repartidor juan = new Repartidor(
+                "Juan Pérez",
+                zonaDeCarga
         );
 
+        Repartidor camila = new Repartidor(
+                "Camila Soto",
+                zonaDeCarga
+        );
 
-        // ==========================================
-        // CREACIÓN DE REPARTIDORES
-        // ==========================================
+        Repartidor luis = new Repartidor(
+                "Luis Díaz",
+                zonaDeCarga
+        );
 
-        Repartidor juan = new Repartidor("Juan Pérez");
-        Repartidor camila = new Repartidor("Camila Soto");
-        Repartidor luis = new Repartidor("Luis Díaz");
-
-
-        // ==========================================
-        // ASIGNACIÓN DE PEDIDOS
-        // ==========================================
-
-        juan.agregarPedido(pedidoComida1);
-        juan.agregarPedido(pedidoExpress1);
-
-        camila.agregarPedido(pedidoEncomienda1);
-        camila.agregarPedido(pedidoComida2);
-
-        luis.agregarPedido(pedidoExpress2);
-        luis.agregarPedido(pedidoEncomienda2);
-
-
-        // ==========================================
-        // EJECUCIÓN CONCURRENTE
-        // ==========================================
-
+        // Crear ExecutorService con 3 hilos
         ExecutorService executor = Executors.newFixedThreadPool(3);
 
-        System.out.println("========================================");
-        System.out.println("INICIANDO SIMULACIÓN DE ENTREGAS");
-        System.out.println("========================================");
+        System.out.println();
+        System.out.println("======================================");
+        System.out.println("   INICIANDO ENTREGAS SPEEDFAST");
+        System.out.println("======================================");
         System.out.println();
 
+        // Ejecutar los 3 repartidores en paralelo
         executor.submit(juan);
         executor.submit(camila);
         executor.submit(luis);
 
+        // No aceptar nuevas tareas
         executor.shutdown();
 
+        // Esperar hasta que todos los repartidores terminen
+        try {
+
+            executor.awaitTermination(
+                    1,
+                    TimeUnit.MINUTES
+            );
+
+        } catch (InterruptedException e) {
+
+            Thread.currentThread().interrupt();
+
+            System.out.println(
+                    "La ejecución fue interrumpida."
+            );
+        }
+
         System.out.println();
-        System.out.println("Todos los repartidores han sido enviados a trabajar.");
+        System.out.println("======================================");
+        System.out.println(
+                "Todos los pedidos han sido entregados correctamente"
+        );
+        System.out.println("======================================");
     }
 }
