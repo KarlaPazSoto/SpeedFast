@@ -6,7 +6,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class ZonaDeCarga {
     private BlockingQueue<Pedido> pedidosPendientes = new LinkedBlockingQueue<>();
 
-    public void agregarPedido(Pedido p) {
+    public void insertarPedido(Pedido p) {
         pedidosPendientes.add(p);
         System.out.println("Pedido agregado: " + p);
     }

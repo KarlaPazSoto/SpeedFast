@@ -21,5 +21,6 @@ public class VentanaPrincipal extends JFrame {
 
         btnRegistrar.addActionListener(e -> new VentanaRegistroPedido().setVisible(true));
         btnListar.addActionListener(e -> new VentanaListaPedidos().setVisible(true));
+        btnAsignar.addActionListener(e -> new VentanaAsignarRepartidor().setVisible(true));
     }
 }
