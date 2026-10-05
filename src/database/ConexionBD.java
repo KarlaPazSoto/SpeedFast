@@ -27,7 +27,7 @@ public class ConexionBD {
 
     public static Connection obtenerConexion() {
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver"); // O el driver de Oracle si volviste a Oracle
+            Class.forName("com.mysql.cj.jdbc.Driver");
             return DriverManager.getConnection(URL, USER, PASSWORD);
         } catch (ClassNotFoundException e) {
             System.err.println("Driver JDBC no encontrado: " + e.getMessage());

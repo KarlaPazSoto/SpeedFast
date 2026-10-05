@@ -1,100 +1,90 @@
 package view;
 
-import database.ConexionBD;
+import dao.EntregaDAO;
+import dao.PedidoDAO;
+import dao.RepartidorDAO;
 import javax.swing.*;
 import java.awt.*;
-import java.sql.*;
+import java.sql.Date;
+import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 public class VentanaAsignarRepartidor extends JFrame {
     private JComboBox<String> cmbPedidos;
     private JComboBox<String> cmbRepartidores;
+    private PedidoDAO pedidoDAO;
+    private RepartidorDAO repartidorDAO;
+    private EntregaDAO entregaDAO;
 
     public VentanaAsignarRepartidor() {
         setTitle("Asignar Repartidor / Iniciar Entrega");
-        setSize(400, 250);
+        setSize(400, 220);
         setLocationRelativeTo(null);
         setLayout(new GridLayout(4, 2, 10, 10));
 
-        add(new JLabel("Seleccionar Pedido (Pendiente):"));
+        pedidoDAO = new PedidoDAO();
+        repartidorDAO = new RepartidorDAO();
+        entregaDAO = new EntregaDAO();
+
+        add(new JLabel("Pedido Pendiente:"));
         cmbPedidos = new JComboBox<>();
         add(cmbPedidos);
 
-        add(new JLabel("Seleccionar Repartidor:"));
+        add(new JLabel("Repartidor:"));
         cmbRepartidores = new JComboBox<>();
         add(cmbRepartidores);
 
-        JButton btnAsignar = new JButton("Asignar e Iniciar");
-        add(new JLabel()); // Espacio vacío
+        JButton btnAsignar = new JButton("Asignar");
+        add(new JLabel());
         add(btnAsignar);
 
         cargarDatosCombos();
 
-        btnAsignar.addActionListener(e -> asignarEntrega());
+        btnAsignar.addActionListener(e -> procesarAsignacion());
     }
 
     private void cargarDatosCombos() {
-        try (Connection conn = ConexionBD.obtenerConexion()) {
-            // Cargar solo pedidos pendientes
-            String sqlPedido = "SELECT id, direccion FROM pedido WHERE estado = 'PENDIENTE'";
-            try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sqlPedido)) {
-                while (rs.next()) {
-                    cmbPedidos.addItem(rs.getInt("id") + " - " + rs.getString("direccion"));
-                }
+        // Cargar pedidos y filtrar solo los PENDIENTES desde el DAO
+        List<String[]> pedidos = pedidoDAO.obtenerPedidos();
+        for (String[] p : pedidos) {
+            if ("PENDIENTE".equals(p[3])) {
+                cmbPedidos.addItem(p[0] + " - " + p[1]); // ID - Dirección
             }
+        }
 
-            // Cargar repartidores
-            String sqlRepartidor = "SELECT id, nombre FROM repartidor";
-            try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sqlRepartidor)) {
-                while (rs.next()) {
-                    cmbRepartidores.addItem(rs.getInt("id") + " - " + rs.getString("nombre"));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Error al cargar combos: " + e.getMessage());
+        // Cargar repartidores desde el DAO
+        List<String[]> repartidores = repartidorDAO.readAll();
+        for (String[] r : repartidores) {
+            cmbRepartidores.addItem(r[0] + " - " + r[1]); // ID - Nombre
         }
     }
 
-    private void asignarEntrega() {
-        String pedidoSeleccionado = (String) cmbPedidos.getSelectedItem();
-        String repartidorSeleccionado = (String) cmbRepartidores.getSelectedItem();
+    private void procesarAsignacion() {
+        String pedidoSel = (String) cmbPedidos.getSelectedItem();
+        String repartidorSel = (String) cmbRepartidores.getSelectedItem();
 
-        if (pedidoSeleccionado == null || repartidorSeleccionado == null) {
+        if (pedidoSel == null || repartidorSel == null) {
             JOptionPane.showMessageDialog(this, "Debe seleccionar un pedido y un repartidor.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        int idPedido = Integer.parseInt(pedidoSeleccionado.split(" - ")[0]);
-        int idRepartidor = Integer.parseInt(repartidorSeleccionado.split(" - ")[0]);
+        int idPedido = Integer.parseInt(pedidoSel.split(" - ")[0]);
+        int idRepartidor = Integer.parseInt(repartidorSel.split(" - ")[0]);
 
-        try (Connection conn = ConexionBD.obtenerConexion()) {
-            conn.setAutoCommit(false);
+        boolean exito = entregaDAO.registrarEntrega(
+                idPedido,
+                idRepartidor,
+                Date.valueOf(LocalDate.now()),
+                Time.valueOf(LocalTime.now())
+        );
 
-            // 1. Insertar en la tabla entrega incluyendo fecha y hora
-            String sqlEntrega = "INSERT INTO entrega (id_pedido, id_repartidor, fecha, hora) VALUES (?, ?, ?, ?)";
-            try (PreparedStatement pstmt1 = conn.prepareStatement(sqlEntrega)) {
-                pstmt1.setInt(1, idPedido);
-                pstmt1.setInt(2, idRepartidor);
-                pstmt1.setDate(3, java.sql.Date.valueOf(LocalDate.now())); // Fecha actual
-                pstmt1.setTime(4, java.sql.Time.valueOf(LocalTime.now())); // Hora actual
-                pstmt1.executeUpdate();
-            }
-
-            // 2. Actualizar el estado del pedido a EN_REPARTO
-            String sqlUpdatePedido = "UPDATE pedido SET estado = 'EN_REPARTO' WHERE id = ?";
-            try (PreparedStatement pstmt2 = conn.prepareStatement(sqlUpdatePedido)) {
-                pstmt2.setInt(1, idPedido);
-                pstmt2.executeUpdate();
-            }
-
-            conn.commit();
-            JOptionPane.showMessageDialog(this, "¡Repartidor asignado con éxito! Entrega iniciada.");
+        if (exito) {
+            JOptionPane.showMessageDialog(this, "¡Entrega registrada y asignada con éxito!");
             dispose();
-
-        } catch (SQLException e) {
-            System.err.println("Error al procesar asignación: " + e.getMessage());
-            JOptionPane.showMessageDialog(this, "Error de base de datos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "Error al procesar la asignación en la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

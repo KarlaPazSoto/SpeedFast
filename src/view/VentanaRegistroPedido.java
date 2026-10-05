@@ -1,6 +1,6 @@
 package view;
 
-import database.PedidoDAO;
+import dao.PedidoDAO;
 import javax.swing.*;
 import java.awt.*;
 
